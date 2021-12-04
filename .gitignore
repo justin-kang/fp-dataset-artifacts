@@ -1,2 +1,5 @@
 *.pyc
 output/
+trained_model/
+data/train_data.json
+data/test_data.json
