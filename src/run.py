@@ -30,7 +30,6 @@ def main():
     # --output_dir <path>
     #     Where to put the trained model checkpoints and any eval predictions.
     #     *This argument is required*.
-
     argp.add_argument('--model', type=str,
             default='google/electra-small-discriminator',
             help="""This argument specifies the base model to fine-tune.
@@ -50,15 +49,17 @@ def main():
     if args.dataset.endswith('.json') or args.dataset.endswith('.jsonl'):
         dataset_id = None
         # Load from local json/jsonl file
-        dataset = datasets.load_dataset('json', data_files=args.dataset)
+        dataset = datasets.load_dataset('json',data_files=args.dataset)
     else:
         dataset_id = tuple(args.dataset.split(':')) \
                 if args.dataset is not None else 'squad'
         # Load the raw data
         dataset = datasets.load_dataset(*dataset_id)
 
-    dataset['train'].to_json('./data/train_data.json')
-    dataset['validation'].to_json('./data/test_data.json')
+    '''
+    dataset['train'].to_json('../data/train_data.json')
+    dataset['validation'].to_json('../data/test_data.json')
+    '''
 
     # Here we select the right model fine-tuning head
     model_class = AutoModelForQuestionAnswering
@@ -75,12 +76,22 @@ def main():
     eval_dataset = None
     train_dataset_featurized = None
     eval_dataset_featurized = None
+
+    '''
+    question_type = 'when'
+    temp_dataset = dataset['train'].filter(
+            lambda x: x['question'].startswith(question_type))
+    temp_dataset.to_json('../data/qtype_train_data.json')
+    temp_dataset = dataset['validation'].filter(
+            lambda x: x['question'].startswith(question_type))
+    temp_dataset.to_json('../data/qtype_test_data.json')
+    '''
+
     if training_args.do_train:
         # By default, the "json" dataset loader places all examples in the 
         # train split, so if we want to use a jsonl file for evaluation we need 
         # to get the "train" split from the loaded dataset
         train_dataset = dataset['train']
-        
         if args.max_train_samples:
             train_dataset = train_dataset.select(range(args.max_train_samples))
         train_dataset_featurized = train_dataset.map(
@@ -91,12 +102,17 @@ def main():
         )
     if training_args.do_eval:
         eval_dataset = dataset['validation']
-
+        
+        #'''
+        # load in the adversarial data set
+        eval_dataset = datasets.load_dataset('json',
+                data_files='../data/add_sent.json')
+        eval_dataset = eval_dataset['train']
+        #'''
         '''
         # change the test dataset to only look at <question_type> questions
-        question_type = 'When'
         eval_dataset = eval_dataset.filter(
-                lambda x: x['question'].startswith(question_type))
+                lambda x: x['question'].lower().startswith(question_type))
         '''
         '''
         # convert the questions to just "<question_type>?"
@@ -105,6 +121,7 @@ def main():
             return x
         eval_dataset = eval_dataset.map(reduce_question)
         '''
+
         if args.max_eval_samples:
             eval_dataset = eval_dataset.select(range(args.max_eval_samples))
         eval_dataset_featurized = eval_dataset.map(
