@@ -80,10 +80,10 @@ def main():
     '''
     question_type = 'when'
     temp_dataset = dataset['train'].filter(
-            lambda x: x['question'].startswith(question_type))
+            lambda x: x['question'].lower().startswith(question_type))
     temp_dataset.to_json('../data/qtype_train_data.json')
     temp_dataset = dataset['validation'].filter(
-            lambda x: x['question'].startswith(question_type))
+            lambda x: x['question'].lower().startswith(question_type))
     temp_dataset.to_json('../data/qtype_test_data.json')
     '''
 
@@ -103,12 +103,12 @@ def main():
     if training_args.do_eval:
         eval_dataset = dataset['validation']
         
-        #'''
+        '''
         # load in the adversarial data set
         eval_dataset = datasets.load_dataset('json',
                 data_files='../data/add_sent.json')
         eval_dataset = eval_dataset['train']
-        #'''
+        '''
         '''
         # change the test dataset to only look at <question_type> questions
         eval_dataset = eval_dataset.filter(
